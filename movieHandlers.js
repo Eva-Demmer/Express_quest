@@ -1,9 +1,39 @@
 const database = require("./database");
 
-// shows all movies in the database
+// shows all movies in the database + filters by color and duration
 const getMovies = (req, res) => {
+  
+  // declares variables to store the SQL string and the array with the SQL values
+  const initialSql = "SELECT * FROM movies";
+  const where = [];
+
+  // if req.query.color is defined, sql will be "select * from movies where color = ?" and sqlValues will contain the color parameter
+  if (req.query.color != null) {
+    where.push({
+      column: "color",
+      value: req.query.color,
+      operator: "=",
+    });
+  }
+
+  // filters by duration
+  if (req.query.max_duration != null) {
+    where.push({
+      column: "duration",
+      value: req.query.max_duration,
+      operator: "<=",
+    });
+  }
+
   database
-    .query("select * from movies")
+    .query(
+      where.reduce(
+        (sql, { column, operator }, index) =>
+          `${sql} ${index === 0 ? "WHERE" : "AND"} ${column} ${operator} ?`,
+        initialSql
+      ),
+      where.map(({ value }) => value)
+    )
     .then(([movies]) => {
       res.json(movies);
     })
@@ -18,7 +48,7 @@ const getMovieById = (req, res) => {
     const id = parseInt(req.params.id);
   
     database
-      .query("select * from movies where id = ?", [id])
+      .query("SELECT * FROM movies WHERE id = ?", [id])
       .then(([movies]) => {
         if (movies[0] != null) {
           res.json(movies[0]);
@@ -57,7 +87,7 @@ const putMovie = (req, res) => {
 
   database
     .query(
-      "update movies set title = ?, director = ?, year = ?, color = ?, duration = ? where id = ?",
+      "UPDATE movies SET title = ?, director = ?, year = ?, color = ?, duration = ? where id = ?",
       [title, director, year, color, duration, id]
     )
     .then(([result]) => {
@@ -78,7 +108,7 @@ const deleteMovie = (req, res) => {
   const id = parseInt(req.params.id);
 
   database
-    .query("delete from movies where id = ?", [id])
+    .query("DELETE FROM movies WHERE id = ?", [id])
     .then(([result]) => {
       if (result.affectedRows === 0) {
         res.status(404).send("Not Found");

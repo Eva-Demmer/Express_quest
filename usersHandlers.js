@@ -1,11 +1,41 @@
 const database = require("./database");
 
-// shows all users in the database
+// shows all users in the database + filters by language and city
 const getUsers = (req, res) => {
+  
+  // declares variables to store the SQL string and the array with the SQL values
+  const initialSql = "SELECT * FROM users";
+  const where = [];
+
+  // if req.query.color is defined, sql will be "select * from movies where color = ?" and sqlValues will contain the color parameter
+  if (req.query.language != null) {
+    where.push({
+      column: "language",
+      value: req.query.language,
+      operator: "=",
+    });
+  }
+
+  // filters by duration
+  if (req.query.city != null) {
+    where.push({
+      column: "city",
+      value: req.query.city,
+      operator: "=",
+    });
+  }
+
   database
-    .query("SELECT * FROM users")
+    .query(
+      where.reduce(
+        (sql, { column, operator }, index) =>
+          `${sql} ${index === 0 ? "WHERE" : "AND"} ${column} ${operator} ?`,
+        initialSql
+      ),
+      where.map(({ value }) => value)
+    )
     .then(([users]) => {
-      res.status(200).json(users);
+      res.json(users);
     })
     .catch((err) => {
       console.error(err);
@@ -57,7 +87,7 @@ const putUser = (req, res) => {
 
   database
     .query(
-      "update users set firstname = ?, lastname = ?, email = ?, city = ?, language = ? where id = ?",
+      "UPDATE users SET firstname = ?, lastname = ?, email = ?, city = ?, language = ? where id = ?",
       [firstname, lastname, email, city, language, id]
     )
     .then(([result]) => {
@@ -78,7 +108,7 @@ const deleteUser = (req, res) => {
   const id = parseInt(req.params.id);
 
   database
-    .query("delete from users where id = ?", [id])
+    .query("DELETE FROM users where id = ?", [id])
     .then(([result]) => {
       if (result.affectedRows === 0) {
         res.status(404).send("Not Found");
