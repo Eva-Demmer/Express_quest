@@ -7,7 +7,7 @@ const getUsers = (req, res) => {
   const initialSql = "SELECT * FROM users";
   const where = [];
 
-  // if req.query.color is defined, sql will be "select * from movies where color = ?" and sqlValues will contain the color parameter
+  // if req.query.language is defined, sql will be "select * from users where language = ?" and sqlValues will contain the language parameter
   if (req.query.language != null) {
     where.push({
       column: "language",
@@ -16,7 +16,7 @@ const getUsers = (req, res) => {
     });
   }
 
-  // filters by duration
+  // filters by city
   if (req.query.city != null) {
     where.push({
       column: "city",
